@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+data: 
+  NEXT_PUBLIC_API_URL: https://link.prastamaha.dev
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: url-shortener-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: url-shortener-frontend
+  template:
+    metadata:
+      labels:
+        app: url-shortener-frontend
+    spec:
+      containers:
+        - name: url-shortener-frontend
+          image: docker.io/prasta/url-shortener-frontend:1.0.0
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: frontend-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: url-shortener-frontend
+spec:
+  selector:
+    app: url-shortener-frontend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: url-shortener-frontend-ingress
+spec:
+  ingressClassName: public-iks-k8s-nginx
+  tls:
+  - hosts:
+    - shortener.prastamaha.dev
+    secretName: shortener-prastamaha-dev
+  rules:
+    - host: shortener.prastamaha.dev
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: url-shortener-frontend
+                port:
+                  number: 3000

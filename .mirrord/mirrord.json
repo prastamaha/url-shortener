@@ -1,0 +1,17 @@
+{
+  "feature": {
+    "env": true,
+    "fs": {
+      "mode": "read"
+    },
+    "network": {
+      "incoming": {
+        "mode": "steal",
+        "http_filter": {
+          "header_filter": "X-Mirrord: prasta-testing",
+          "ports": [8080]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  # MongoDB Configuration
+  MONGO_URI: mongodb.demo.svc.cluster.local
+  MONGO_PORT: "27017"
+  MONGO_COLLECTION: urls
+
+  # App Configuration
+  APP_HOST: 0.0.0.0
+  APP_PORT: "8080"
+  APP_SHORTENER_URI: https://link.prastamaha.dev
+
+  # CORS Configuration
+  CORS_ALLOWED_ORIGIN: "https://shortener.prastamaha.dev,http://localhost:3000"
+  CORS_ALLOWED_HEADERS: "*"
+  CORS_ALLOWED_METHODS: "POST,GET,PUT,OPTIONS,DELETE,HEAD"
+  CORS_ALLOW_CREDENTIALS: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: url-shortener-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: url-shortener-backend
+  template:
+    metadata:
+      labels:
+        app: url-shortener-backend
+    spec:
+      containers:
+        - name: url-shortener-backend
+          image: docker.io/prasta/url-shortener-backend:1.0.1
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: backend-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: url-shortener-backend
+spec:
+  selector:
+    app: url-shortener-backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: url-shortener-backend-ingress
+spec:
+  ingressClassName: public-iks-k8s-nginx
+  tls:
+  - hosts:
+    - link.prastamaha.dev
+    secretName: link-prastamaha-dev
+  rules:
+    - host: link.prastamaha.dev
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: url-shortener-backend
+                port:
+                  number: 8080
