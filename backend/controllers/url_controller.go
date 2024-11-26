@@ -73,7 +73,13 @@ func DeleteURL(w http.ResponseWriter, r *http.Request) {
 	shortID := r.URL.Query().Get("id")
 
 	collection := utils.DB.Collection("urls")
-	_, err := collection.DeleteOne(context.TODO(), bson.M{"_id": shortID})
+	result, err := collection.DeleteOne(context.TODO(), bson.M{"_id": shortID})
+
+	if result.DeletedCount == 0 {
+		http.Error(w, `{"message": "URL not found"}`, http.StatusNotFound)
+		return
+	}
+
 	if err != nil {
 		http.Error(w, "Failed to delete URL", http.StatusInternalServerError)
 		return
